@@ -43,22 +43,22 @@ pip install ultralytics streamlit plotly pandas opencv-python torch torchvision
 
 ```bash
 # YOLOv11 + ByteTrack (default, recommended)
-python main.py --model best --filepath data/traffic.mp4
+python main.py --model best --filepath data/video2.mp4
 
 # YOLOv11 + ByteTrack with specific classes
-python main.py --model yolov11_track --filepath data/traffic.mp4 --classes car bus truck "stop sign"
+python main.py --model yolov11_track --filepath data/video2.mp4 --classes car bus truck "stop sign"
 
 # YOLOv11 simple detection (no tracking)
-python main.py --model yolov11 --filepath data/traffic.mp4
+python main.py --model yolov11 --filepath data/video2.mp4
 
 # SSD MobileNetV3
-python main.py --model ssd --filepath data/traffic.mp4 --classes car bus truck "stop sign"
+python main.py --model ssd --filepath data/video2.mp4 --classes car bus truck "stop sign"
 
 # Force CPU
-python main.py --model yolov11_track --filepath data/traffic.mp4 --device cpu
+python main.py --model yolov11_track --filepath data/video2.mp4 --device cpu
 
 # Custom confidence threshold
-python main.py --model yolov11_track --filepath data/traffic.mp4 --conf 0.5
+python main.py --model yolov11_track --filepath data/video2.mp4 --conf 0.5
 ```
 
 ## Web Interface
