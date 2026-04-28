@@ -15,8 +15,8 @@ import plotly.express as px
 from ultralytics import YOLO
 from datetime import datetime
 from utils.yolo_tracker import normalize_class_name
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
-import av
+#from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
+#import av
 
 if 'global_unique_ids' not in st.session_state:
     st.session_state.global_unique_ids = {}
@@ -151,41 +151,10 @@ person_car_ratio = st.sidebar.slider(
     step=0.05
 )
 
-#uploaded_file = st.file_uploader(
-   # "📤 Upload a video (mp4, avi, mov)",
-   # type=["mp4", "avi", "mov"]
-#)
-
-input_source = st.radio(
-    "📥 Input source",
-    ["Upload a video", "Use Webcam (live)"],
-    horizontal=True
+uploaded_file = st.file_uploader(
+    "📤 Upload a video (mp4, avi, mov)",
+    type=["mp4", "avi", "mov"]
 )
-
-uploaded_file = None
-
-if input_source == "Upload a video":
-    uploaded_file = st.file_uploader(
-        "📤 Upload a video (mp4, avi, mov)",
-        type=["mp4", "avi", "mov"]
-    )
-
-elif input_source == "Use Webcam (live)":
-    st.subheader("📷 Live Webcam Detection")
-    st.info("Allow browser access to your camera, then click START.")
-
-    webrtc_streamer(
-        key            = "traffic-webcam",
-        video_processor_factory = TrafficVideoProcessor,
-        rtc_configuration = RTCConfiguration({
-            "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-        }),
-        media_stream_constraints = {"video": True, "audio": False},
-        async_processing = True,
-    )
-
-
-    
 # ── Main ───────────────────────────────────────────────────────────────────────
 if not selected_classes:
     st.warning("Select at least one class in the menu.")
