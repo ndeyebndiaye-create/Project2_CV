@@ -1,0 +1,38 @@
+models:
+
+  yolov11:
+    name: YOLOv11 Nano
+    weights: models/yolo11n.pt
+    type: detection
+    backend: ultralytics
+    input: video
+    tracking: false
+    pretrained_on: COCO
+    num_classes: 80
+    image_size: 640
+    description: Fast frame-by-frame detection without object tracking
+
+  yolov11_track:
+    name: YOLOv11 Nano + ByteTrack
+    weights: models/yolo11n.pt
+    type: detection + tracking
+    backend: ultralytics
+    tracker: bytetrack.yaml
+    input: video
+    tracking: true
+    pretrained_on: COCO
+    num_classes: 80
+    image_size: 640
+    description: Detection with persistent object IDs across frames and CSV logging
+
+  ssd:
+    name: SSDLite MobileNetV3 Large
+    weights: auto (torchvision)
+    type: detection
+    backend: torchvision
+    input: video
+    tracking: false
+    pretrained_on: COCO
+    num_classes: 91
+    image_size: 320
+    description: Lightweight SSD detector, weights downloaded automatically

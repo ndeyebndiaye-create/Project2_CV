@@ -1,0 +1,26 @@
+device:
+  force_gpu: true
+  fallback_cpu: true        # falls back to CPU if CUDA not available
+
+detection:
+  default_model: yolov11_track
+  confidence_threshold: 0.4
+  image_size: 640
+
+tracking:
+  tracker: bytetrack.yaml
+  persist: true             # keep IDs across frames
+
+output:
+  save_video: true
+  show_live: true
+  video_dir: results/
+  log_dir: logs/
+  video_codec: mp4v
+  log_format: csv
+
+stop_sign:
+  enabled: true
+  highlight_color: [0, 0, 255]   # BGR red
+  box_thickness: 3
+  label: STOP SIGN
