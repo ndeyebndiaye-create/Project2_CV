@@ -1,9 +1,13 @@
+opencv-python-headless>=4.8.0
 ultralytics>=8.0.0
-opencv-python
 filterpy>=1.4.5
 lap>=0.4.0
 supervision>=0.18.0
-flask>=3.0.0
 plotly>=5.18.0
 pandas>=2.0.0
 numpy>=1.24.0
+streamlit-webrtc>=0.47.0
+aiortc>=1.6.0
+torch>=2.0.0
+torchvision>=0.15.0
+av>=10.0.0
