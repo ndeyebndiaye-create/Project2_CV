@@ -102,7 +102,7 @@ timestamp_s, frame, track_id, class, x1, y1, x2, y2, confidence
 
 ```
 Traffic : car, truck, bus, motorbike, bicycle, person
-Signs   : stop sign, traffic light
+Signs   : stop sign, traffic light traffic sign
 ```
 
 ## License
