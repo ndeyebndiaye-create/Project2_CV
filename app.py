@@ -38,69 +38,6 @@ TRAFFIC_CLASSES = ['car', 'truck', 'bus', 'motorbike', 'bicycle', 'person', 'tra
 YOLO_BASE_PATH = "models/yolo11n.pt"
 YOLO_FINETUNED_PATH = "models/best.pt"
 os.makedirs("logs", exist_ok=True)
-
-class TrafficVideoProcessor(VideoProcessorBase):
-    def __init__(self):
-        self.model       = YOLO(
-            "models/best.pt" if os.path.exists("models/best.pt")
-            else "models/yolo11n.pt"
-        )
-        self.unique_ids  = {}
-        self.track_hits  = {}
-        self.frame_idx   = 0
-
-    def recv(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-
-        results = self.model.track(
-            img,
-            persist  = True,
-            tracker  = "bytetrack.yaml",
-            conf     = 0.4,
-            device   = DEVICE,
-            verbose  = False
-        )
-
-        annotated = img.copy()
-        no_object = True
-
-        if results[0].boxes is not None and results[0].boxes.id is not None:
-            for box in results[0].boxes:
-                track_id = int(box.id[0])
-                cls_name = self.model.names[int(box.cls[0])]
-                conf_val = round(float(box.conf[0]), 3)
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-
-                no_object = False
-                self.track_hits[track_id] = self.track_hits.get(track_id, 0) + 1
-
-                if self.track_hits[track_id] >= 3:
-                    self.unique_ids.setdefault(track_id, cls_name)
-
-                color = (0, 0, 255) if cls_name == "stop sign" else (0, 255, 0)
-                label = f"{cls_name} ID:{track_id} {conf_val:.2f}"
-                cv.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
-                cv.putText(annotated, label, (x1, max(y1 - 8, 0)),
-                           cv.FONT_HERSHEY_SIMPLEX, 0.55, color, 2)
-
-        if no_object:
-            cv.putText(annotated, "No selected object detected",
-                       (20, 50), cv.FONT_HERSHEY_SIMPLEX,
-                       1.0, (0, 0, 255), 2)
-
-        # Afficher les compteurs sur la frame
-        y_off = 30
-        stats = {}
-        for cls in self.unique_ids.values():
-            stats[cls] = stats.get(cls, 0) + 1
-        for cls_name, count in sorted(stats.items()):
-            label = f"{cls_name}: {count} unique"
-            cv.putText(annotated, label, (10, y_off),
-                       cv.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
-            y_off += 30
-
-        self.frame_idx += 1
-        return av.VideoFrame.from_ndarray(annotated, format="bgr24")
     
 
 st.set_page_config(page_title="Traffic Monitor", layout="wide")
