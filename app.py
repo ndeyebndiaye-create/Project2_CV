@@ -17,6 +17,24 @@ from datetime import datetime
 from utils.yolo_tracker import normalize_class_name
 #from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
 #import av
+import os
+from huggingface_hub import hf_hub_download
+ 
+def download_model():
+    os.makedirs("models", exist_ok=True)
+    if not os.path.exists("models/best.pt"):
+        try:
+            print("Downloading best.pt from HuggingFace Hub...")
+            hf_hub_download(
+                repo_id   = "Binta26/traffic-yolo11-bdd100k",  # ← ton repo model HF
+                filename  = "best.pt",
+                local_dir = "models"
+            )
+            print("best.pt downloaded successfully !")
+        except Exception as e:
+            print(f"WARNING: Could not download best.pt — {e}")
+ 
+download_model()
 
 if 'global_unique_ids' not in st.session_state:
     st.session_state.global_unique_ids = {}
