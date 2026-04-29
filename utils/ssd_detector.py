@@ -31,7 +31,6 @@ COCO_CLASSES = [
     "teddy bear", "hair drier", "toothbrush"
 ]
 
-# ✅ "motorbike" aligné avec yolo_tracker.py (cohérence du projet)
 TRAFFIC_CLASSES = {
     "person", "bicycle", "car", "motorbike", "motorcycle",
     "bus", "truck", "stop sign", "traffic light"
@@ -48,17 +47,22 @@ class SSDDetector:
     - No training needed
     - Detects 91 COCO classes including stop sign
     - GPU accelerated
+    - CSV logs follow the shared schema
     """
     def __init__(self, filepath,
                  classes=None,
                  confidence_threshold=0.4,
                  device="cuda",
-                 output_dir="logs"):
+                 output_dir="logs",
+                 scene_name="scene_01",
+                 group_id="group_01"):
 
         self.filepath   = filepath
         self.classes    = classes if classes else TRAFFIC_CLASSES
         self.conf_thr   = confidence_threshold
         self.output_dir = output_dir
+        self.scene_name = scene_name
+        self.group_id   = group_id
         os.makedirs(output_dir, exist_ok=True)
         os.makedirs("results",  exist_ok=True)
 
@@ -79,6 +83,9 @@ class SSDDetector:
         h   = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
         fps = cap.get(cv.CAP_PROP_FPS) or 25
 
+        video_name = os.path.basename(self.filepath)
+        line_y     = h // 2  # ligne de comptage au centre
+
         video_writer = None
         if save_video:
             video_writer = cv.VideoWriter(
@@ -94,16 +101,21 @@ class SSDDetector:
 
         stats     = {}
         frame_idx = 0
+        prev_pos  = {}  # pour calcul vitesse {label_idx: (cx, cy)}
 
         print(f"Running SSD detection...")
         print(f"Video : {w}x{h} @ {fps:.0f}fps")
 
         with open(log_path, "w", newline="") as f:
             writer = csv.writer(f)
-            # ✅ Ajout timestamp_s pour cohérence avec yolo_tracker logs
+
+            # ── Header — schéma partagé ────────────────────────────────────────
             writer.writerow([
-                "timestamp_s", "frame", "class",
-                "x1", "y1", "x2", "y2", "confidence"
+                'frame', 'timestamp_sec', 'scene_name', 'group_id', 'video_name',
+                'track_id', 'class_name', 'confidence',
+                'bbox_x1', 'bbox_y1', 'bbox_x2', 'bbox_y2',
+                'cx', 'cy', 'frame_width', 'frame_height',
+                'crossed_line', 'direction', 'speed_px_s'
             ])
 
             while cap.isOpened():
@@ -128,8 +140,8 @@ class SSDDetector:
                     if score < self.conf_thr:
                         continue
 
-                    cls_name = COCO_CLASSES[label] if label < len(COCO_CLASSES) else "unknown"
-                    # ✅ Normaliser "motorcycle" → "motorbike"
+                    cls_name = COCO_CLASSES[label] if label < len(COCO_CLASSES) \
+                               else "unknown"
                     if cls_name == "motorcycle":
                         cls_name = "motorbike"
                     if cls_name not in self.classes:
@@ -138,11 +150,42 @@ class SSDDetector:
                     no_object = False
                     x1, y1, x2, y2 = map(int, box)
 
+                    # ── Calculs schéma partagé ─────────────────────────────────
+                    cx = (x1 + x2) // 2
+                    cy = (y1 + y2) // 2
+
+                    # Vitesse en px/s
+                    key = int(label)
+                    if key in prev_pos:
+                        px, py = prev_pos[key]
+                        dist   = ((cx-px)**2 + (cy-py)**2) ** 0.5
+                        speed  = round(dist * fps, 2)
+                    else:
+                        speed = 0.0
+                    prev_pos[key] = (cx, cy)
+
+                    # Direction
+                    if key in prev_pos and speed > 0:
+                        px, py = prev_pos[key]
+                        if abs(cx-px) > abs(cy-py):
+                            direction = "right" if cx > px else "left"
+                        else:
+                            direction = "down" if cy > py else "up"
+                    else:
+                        direction = ""
+
+                    # Traversée ligne de comptage
+                    crossed = "true" if abs(cy - line_y) < 10 else "false"
+
+                    # SSD n'a pas de track_id — on utilise -1
+                    track_id = -1
+
+                    # ── Dessin ────────────────────────────────────────────────
                     if cls_name == "stop sign":
                         color     = STOP_COLOR
                         thickness = 3
                         cv.putText(frame, "STOP SIGN",
-                                   (x1, max(y1 - 20, 0)),
+                                   (x1, max(y1-20, 0)),
                                    cv.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
                     else:
                         color     = [int(c) for c in COLORS[label]]
@@ -150,14 +193,26 @@ class SSDDetector:
 
                     cv.rectangle(frame, (x1, y1), (x2, y2), color, thickness)
                     cv.putText(frame, f"{cls_name}: {score:.2f}",
-                               (x1, max(y1 - 8, 0)),
+                               (x1, max(y1-8, 0)),
                                cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
                     stats[cls_name] = stats.get(cls_name, 0) + 1
+
+                    # ── Écriture CSV ───────────────────────────────────────────
                     writer.writerow([
-                        timestamp, frame_idx, cls_name,
-                        x1, y1, x2, y2, round(float(score), 3)
+                        frame_idx, timestamp,
+                        self.scene_name, self.group_id, video_name,
+                        track_id, cls_name, round(float(score), 3),
+                        x1, y1, x2, y2,
+                        cx, cy, w, h,
+                        crossed, direction, speed
                     ])
+
+                # Ligne de comptage visuelle
+                cv.line(frame, (0, line_y), (w, line_y), (0, 255, 0), 2)
+                cv.putText(frame, "Counting line",
+                           (10, line_y - 10),
+                           cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
                 if no_object:
                     cv.putText(frame, "No selected object detected",
